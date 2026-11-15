@@ -1,0 +1,9 @@
+model,family,epochs,imgsz,mAP,AP50,AP75,AP_small,AP_medium,fps,public_LB
+yolo_640,one-stage anchor-free,15,640.0,0.1601,0.3014,0.1538,0.042,0.1308,18.89,
+yolo_1024,one-stage anchor-free,15,1024.0,0.1938,0.3756,0.1806,0.1122,0.1739,17.55,0.2031
+yolo_p2_1024,one-stage anchor-free,15,1024.0,0.1888,0.3777,0.1664,0.1081,0.1822,16.79,
+frcnn_base,two-stage,2,,0.2321,0.4673,0.2004,0.1061,0.216,5.02,
+frcnn_small_anchors,two-stage,2,,0.2282,0.4729,0.1903,0.1279,0.215,5.06,
+retina_base,one-stage anchor,2,,0.1657,0.3187,0.1534,0.0603,0.1523,5.3,
+retina_anchors_focal,one-stage anchor,2,,0.1636,0.3476,0.134,0.0618,0.1498,5.36,
+yolo_m_1024_trainval,one-stage anchor-free,10,1024.0,,,,,,,0.2642
