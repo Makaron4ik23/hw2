@@ -293,6 +293,15 @@ def log_result(row, path='results/metrics.csv'):
 # --------------------------------------------------------------------------
 # 5. Prediction helpers
 # --------------------------------------------------------------------------
+def _half_arg(half):
+    """FP16 inference flag; newer Ultralytics renamed `half` to `quantize` (avoids a warning per batch)."""
+    import torch
+    from ultralytics.cfg import get_cfg
+    if not (half and torch.cuda.is_available()):
+        return {}
+    return {'quantize': 16} if 'quantize' in vars(get_cfg()) else {'half': True}
+
+
 def predict_ultralytics(model, frames, imgsz, conf=0.001, iou=0.6, max_det=500,
                         augment=False, batch=8, half=True):
     """Run an Ultralytics model (YOLO or RT-DETR) on raw frames.
@@ -303,14 +312,14 @@ def predict_ultralytics(model, frames, imgsz, conf=0.001, iou=0.6, max_det=500,
     preds, n, t0 = {}, 0, None
     paths = [str(p) for _, p in frames]
     keys = [frame_key(c, p) for c, p in frames]
-    half = half and torch.cuda.is_available()
+    half_arg = _half_arg(half)
     for i in range(0, len(paths), batch):
         if i == batch:  # start the clock after the first (warm-up) batch
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             t0, n = time.time(), 0
         results = model.predict(paths[i:i + batch], imgsz=imgsz, conf=conf, iou=iou, max_det=max_det,
-                                augment=augment, half=half, verbose=False)
+                                augment=augment, verbose=False, **half_arg)
         for k, r in zip(keys[i:i + batch], results):
             b = r.boxes
             preds[k] = (b.xyxy.cpu().numpy(), b.conf.cpu().numpy(), b.cls.cpu().numpy().astype(int))
@@ -367,7 +376,7 @@ def predict_ultralytics_tiled(model, frames, imgsz, grid=(2, 2), overlap=0.2, in
     detections (+ optionally the full frame) are merged with class-wise NMS.
     """
     import torch
-    half = half and torch.cuda.is_available()
+    half_arg = _half_arg(half)
     preds, t0 = {}, time.time()
     gx, gy = grid
     for c, p in frames:
@@ -384,7 +393,7 @@ def predict_ultralytics_tiled(model, frames, imgsz, grid=(2, 2), overlap=0.2, in
         if include_full:
             crops.append(img)
             offs.append((0, 0))
-        results = model.predict(crops, imgsz=imgsz, conf=conf, iou=iou, max_det=max_det, half=half, verbose=False)
+        results = model.predict(crops, imgsz=imgsz, conf=conf, iou=iou, max_det=max_det, verbose=False, **half_arg)
         B, S, L = [], [], []
         for (ox, oy), r in zip(offs, results):
             b = r.boxes.xyxy.cpu().numpy()
